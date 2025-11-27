@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>تجربة تطبيق الصوت</title>
+<link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log("Service Worker Registered"));
+  }
+</script>
+<style>
+  body {
+    font-family: sans-serif;
+    padding: 15px;
+    background: #f5f5f5;
+  }
+  .box {
+    background: white;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  input, select, button {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 6px;
+    border: 1px solid #aaa;
+    font-size: 16px;
+  }
+  button {
+    background: #008cff;
+    color: white;
+    font-weight: bold;
+    border: none;
+  }
+</style>
+</head>
+<body>
+
+<h2>تطبيق إدخال المنتجات بالصوت</h2>
+
+<div class="box">
+  <button id="recordBtn">🎤 تسجيل الصوت</button>
+  <input type="text" id="productName" placeholder="اسم المنتج" />
+  <input type="number" id="productPrice" placeholder="السعر" />
+  <button id="saveBtn">💾 حفظ</button>
+</div>
+
+<div class="box">
+  <button id="searchVoiceBtn">🔎 بحث صوتي</button>
+  <input type="text" id="searchName" placeholder="اسم المنتج للبحث" />
+  <button id="searchBtn">بحث</button>
+</div>
+
+<div class="box">
+  <h3>المخرجات:</h3>
+  <select id="productsDropdown"></select>
+</div>
+
+<script>
+let products = JSON.parse(localStorage.getItem("prodDB") || "{}");
+refreshDropdown();
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizer = new SpeechRecognition();
+recognizer.lang = "ar-SA";
+recognizer.interimResults = false;
+
+recordBtn.onclick = () => {
+  recognizer.start();
+  recognizer.onresult = (e) => {
+    let text = e.results[0][0].transcript;
+
+    if (!isNaN(parseFloat(text))) {
+      document.getElementById("productPrice").value = text;
+    } else {
+      document.getElementById("productName").value = text;
+    }
+  };
+};
+
+saveBtn.onclick = () => {
+  let name = productName.value.trim();
+  let price = productPrice.value.trim();
+  if (!name || !price) return alert("املأ الحقول أولا");
+
+  products[name] = price;
+  localStorage.setItem("prodDB", JSON.stringify(products));
+  refreshDropdown();
+  alert("تم الحفظ");
+};
+
+searchVoiceBtn.onclick = () => {
+  recognizer.start();
+  recognizer.onresult = (e) => {
+    searchName.value = e.results[0][0].transcript;
+  };
+};
+
+searchBtn.onclick = () => {
+  let name = searchName.value.trim();
+  if (products[name]) {
+    productName.value = name;
+    productPrice.value = products[name];
+    alert("تم العثور على المنتج وتعبئة الحقول");
+  } else {
+    alert("المنتج غير موجود");
+  }
+};
+
+function refreshDropdown() {
+  let drop = document.getElementById("productsDropdown");
+  drop.innerHTML = "";
+  for (let name in products) {
+    let option = document.createElement("option");
+    option.textContent = `${name} - ${products[name]}`;
+    drop.appendChild(option);
+  }
+}
+</script>
+
+</body>
+</html>
