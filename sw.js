@@ -1,19 +1,27 @@
-self.addEventListener('install', (e) => {
-  self.skipWaiting();
-});
+// sw.js
+const CACHE_NAME = 'products-app-v1';
+const urlsToCache = [
+  './',
+  './index.html',
+  './manifest.json'
+];
 
-self.addEventListener('activate', (e) => {
-  clients.claim();
-});
-
-self.addEventListener('fetch', (e) => {
-  e.respondWith(fetch(e.request));
-});
-
-self.addEventListener("install", (event) => {
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open("app-cache").then(cache => {
-      return cache.addAll(["/", "/index.html", "/manifest.json"]);
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(urlsToCache))
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        if (response) {
+          return response;
+        }
+        return fetch(event.request);
+      }
+    )
   );
 });
